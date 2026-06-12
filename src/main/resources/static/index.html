@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OSS WebP 压缩上传测试</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --surface: #1a2332;
+      --surface2: #243044;
+      --border: #2d3a4f;
+      --text: #e7ecf3;
+      --muted: #8b9cb3;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --success: #22c55e;
+      --error: #ef4444;
+      --radius: 12px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    .page {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 32px 20px 64px;
+    }
+
+    header {
+      margin-bottom: 32px;
+    }
+
+    header h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    header p {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+
+    .card h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .dropzone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 40px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      background: var(--surface2);
+    }
+
+    .dropzone:hover,
+    .dropzone.dragover {
+      border-color: var(--accent);
+      background: rgba(59, 130, 246, 0.08);
+    }
+
+    .dropzone-icon {
+      font-size: 2.5rem;
+      margin-bottom: 12px;
+    }
+
+    .dropzone p { color: var(--muted); font-size: 0.9rem; }
+
+    .dropzone .filename {
+      margin-top: 12px;
+      color: var(--success);
+      font-weight: 500;
+      word-break: break-all;
+    }
+
+    #fileInput { display: none; }
+
+    .preview-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 20px;
+    }
+
+    @media (max-width: 600px) {
+      .preview-row { grid-template-columns: 1fr; }
+    }
+
+    .preview-box {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .preview-box label {
+      display: block;
+      padding: 10px 14px;
+      font-size: 0.8rem;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .preview-box img {
+      width: 100%;
+      height: 220px;
+      object-fit: contain;
+      background: #111;
+      display: block;
+    }
+
+    .preview-box .empty {
+      height: 220px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    button {
+      border: none;
+      border-radius: 8px;
+      padding: 10px 18px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s, opacity 0.2s;
+    }
+
+    button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
+
+    .btn-secondary {
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover:not(:disabled) { background: var(--border); }
+
+    .status {
+      margin-top: 16px;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      display: none;
+    }
+
+    .status.show { display: block; }
+
+    .status.loading {
+      background: rgba(59, 130, 246, 0.15);
+      color: #93c5fd;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+
+    .status.success {
+      background: rgba(34, 197, 94, 0.12);
+      color: #86efac;
+      border: 1px solid rgba(34, 197, 94, 0.3);
+    }
+
+    .status.error {
+      background: rgba(239, 68, 68, 0.12);
+      color: #fca5a5;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    pre {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      overflow-x: auto;
+      font-size: 0.8rem;
+      line-height: 1.5;
+      color: #a5f3fc;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .links { margin-top: 12px; }
+
+    .links a {
+      display: block;
+      color: var(--accent);
+      font-size: 0.85rem;
+      margin-top: 6px;
+      word-break: break-all;
+    }
+
+    .links a:hover { text-decoration: underline; }
+
+    .meta {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    .meta span strong { color: var(--text); }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <h1>OSS WebP 压缩上传测试</h1>
+      <p>选择图片后调用后端接口，上传原图并由阿里云 OSS 等质量压缩为 WebP。</p>
+    </header>
+
+    <div class="card">
+      <h2>选择文件</h2>
+      <div class="dropzone" id="dropzone">
+        <div class="dropzone-icon">📷</div>
+        <p>点击或拖拽图片到此处</p>
+        <p style="margin-top:6px;font-size:0.8rem;">支持 jpg / jpeg / png / gif / bmp / webp</p>
+        <div class="filename" id="fileName"></div>
+      </div>
+      <input type="file" id="fileInput" accept="image/jpeg,image/png,image/gif,image/bmp,image/webp,.jpg,.jpeg,.png,.gif,.bmp,.webp">
+
+      <div class="preview-row">
+        <div class="preview-box">
+          <label>本地预览（原图）</label>
+          <div class="empty" id="localPreviewEmpty">尚未选择文件</div>
+          <img id="localPreview" alt="本地预览" style="display:none;">
+        </div>
+        <div class="preview-box">
+          <label>OSS 压缩结果（WebP）</label>
+          <div class="empty" id="webpPreviewEmpty">上传成功后显示</div>
+          <img id="webpPreview" alt="WebP 预览" style="display:none;">
+        </div>
+      </div>
+
+      <div class="meta" id="fileMeta" style="display:none;">
+        <span>文件名：<strong id="metaName">-</strong></span>
+        <span>大小：<strong id="metaSize">-</strong></span>
+        <span>类型：<strong id="metaType">-</strong></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>接口测试</h2>
+      <div class="actions">
+        <button class="btn-primary" id="btnZip" disabled>上传并压缩（/upload/zip）</button>
+        <button class="btn-secondary" id="btnZip1" disabled>仅返回 WebP（/upload/zip1）</button>
+        <button class="btn-secondary" id="btnUpload" disabled>普通上传（/upload/file）</button>
+        <button class="btn-secondary" id="btnClear">清空</button>
+      </div>
+      <div class="status" id="status"></div>
+    </div>
+
+    <div class="card">
+      <h2>响应结果</h2>
+      <pre id="responseBox">等待上传...</pre>
+      <div class="links" id="resultLinks"></div>
+    </div>
+  </div>
+
+  <script>
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('fileInput');
+    const fileNameEl = document.getElementById('fileName');
+    const localPreview = document.getElementById('localPreview');
+    const localPreviewEmpty = document.getElementById('localPreviewEmpty');
+    const webpPreview = document.getElementById('webpPreview');
+    const webpPreviewEmpty = document.getElementById('webpPreviewEmpty');
+    const fileMeta = document.getElementById('fileMeta');
+    const statusEl = document.getElementById('status');
+    const responseBox = document.getElementById('responseBox');
+    const resultLinks = document.getElementById('resultLinks');
+
+    let selectedFile = null;
+    let localObjectUrl = null;
+
+    function formatSize(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / 1024 / 1024).toFixed(2) + ' MB';
+    }
+
+    function setButtonsEnabled(enabled) {
+      ['btnZip', 'btnZip1', 'btnUpload'].forEach(id => {
+        document.getElementById(id).disabled = !enabled;
+      });
+    }
+
+    function showStatus(type, message) {
+      statusEl.className = 'status show ' + type;
+      statusEl.textContent = message;
+    }
+
+    function hideStatus() {
+      statusEl.className = 'status';
+    }
+
+    function setLocalPreview(file) {
+      if (localObjectUrl) URL.revokeObjectURL(localObjectUrl);
+      localObjectUrl = URL.createObjectURL(file);
+      localPreview.src = localObjectUrl;
+      localPreview.style.display = 'block';
+      localPreviewEmpty.style.display = 'none';
+    }
+
+    function resetWebpPreview() {
+      webpPreview.style.display = 'none';
+      webpPreview.src = '';
+      webpPreviewEmpty.style.display = 'flex';
+      webpPreviewEmpty.textContent = '上传成功后显示';
+    }
+
+    function handleFile(file) {
+      if (!file) return;
+      const valid = /\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(file.name);
+      if (!valid) {
+        showStatus('error', '不支持的文件格式，请选择图片文件');
+        return;
+      }
+
+      selectedFile = file;
+      fileNameEl.textContent = file.name;
+      setLocalPreview(file);
+      resetWebpPreview();
+
+      document.getElementById('metaName').textContent = file.name;
+      document.getElementById('metaSize').textContent = formatSize(file.size);
+      document.getElementById('metaType').textContent = file.type || '未知';
+      fileMeta.style.display = 'flex';
+
+      setButtonsEnabled(true);
+      hideStatus();
+      responseBox.textContent = '已选择文件，请点击上方按钮开始上传';
+      resultLinks.innerHTML = '';
+    }
+
+    dropzone.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', e => handleFile(e.target.files[0]));
+
+    dropzone.addEventListener('dragover', e => {
+      e.preventDefault();
+      dropzone.classList.add('dragover');
+    });
+    dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+    dropzone.addEventListener('drop', e => {
+      e.preventDefault();
+      dropzone.classList.remove('dragover');
+      handleFile(e.dataTransfer.files[0]);
+    });
+
+    async function upload(endpoint, fieldName) {
+      if (!selectedFile) return;
+
+      const formData = new FormData();
+      formData.append(fieldName || 'file', selectedFile);
+
+      showStatus('loading', '上传中，请稍候（OSS 图片处理可能需要几秒）...');
+      setButtonsEnabled(false);
+
+      try {
+        const resp = await fetch(endpoint, { method: 'POST', body: formData });
+        const json = await resp.json();
+        responseBox.textContent = JSON.stringify(json, null, 2);
+
+        if (json.code !== 0) {
+          showStatus('error', json.msg || '上传失败');
+          return;
+        }
+
+        showStatus('success', '上传成功');
+        renderResult(json.data, endpoint);
+      } catch (err) {
+        showStatus('error', '请求失败：' + err.message);
+        responseBox.textContent = String(err);
+      } finally {
+        setButtonsEnabled(!!selectedFile);
+      }
+    }
+
+    function renderResult(data, endpoint) {
+      resultLinks.innerHTML = '';
+      let webpUrl = null;
+      let originalUrl = null;
+
+      if (typeof data === 'string') {
+        webpUrl = data;
+        addLink('访问地址', webpUrl);
+      } else if (data && typeof data === 'object') {
+        originalUrl = data.originalUrl;
+        webpUrl = data.thumbnailUrl;
+        if (originalUrl) addLink('原图 URL', originalUrl);
+        if (webpUrl) addLink('WebP 压缩图 URL', webpUrl);
+      }
+
+      if (webpUrl) {
+        webpPreview.src = webpUrl + (webpUrl.includes('?') ? '&' : '?') + '_t=' + Date.now();
+        webpPreview.style.display = 'block';
+        webpPreviewEmpty.style.display = 'none';
+        webpPreview.onerror = () => {
+          webpPreviewEmpty.style.display = 'flex';
+          webpPreviewEmpty.textContent = 'WebP 预览加载失败（Bucket 可能非公共读）';
+          webpPreview.style.display = 'none';
+        };
+      }
+    }
+
+    function addLink(label, url) {
+      const a = document.createElement('a');
+      a.href = url;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      a.textContent = label + '：' + url;
+      resultLinks.appendChild(a);
+    }
+
+    document.getElementById('btnZip').addEventListener('click', () => {
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+      uploadWithForm('/infra/oss/upload/zip', formData);
+    });
+
+    document.getElementById('btnZip1').addEventListener('click', () => upload('/infra/oss/upload/zip1', 'file'));
+    document.getElementById('btnUpload').addEventListener('click', () => upload('/infra/oss/upload/file', 'file'));
+
+    async function uploadWithForm(endpoint, formData) {
+      if (!selectedFile) return;
+      showStatus('loading', '上传中，请稍候（OSS 图片处理可能需要几秒）...');
+      setButtonsEnabled(false);
+      try {
+        const resp = await fetch(endpoint, { method: 'POST', body: formData });
+        const json = await resp.json();
+        responseBox.textContent = JSON.stringify(json, null, 2);
+        if (json.code !== 0) {
+          showStatus('error', json.msg || '上传失败');
+          return;
+        }
+        showStatus('success', '上传成功');
+        renderResult(json.data, endpoint);
+      } catch (err) {
+        showStatus('error', '请求失败：' + err.message);
+        responseBox.textContent = String(err);
+      } finally {
+        setButtonsEnabled(!!selectedFile);
+      }
+    }
+
+    document.getElementById('btnClear').addEventListener('click', () => {
+      selectedFile = null;
+      fileInput.value = '';
+      fileNameEl.textContent = '';
+      if (localObjectUrl) URL.revokeObjectURL(localObjectUrl);
+      localObjectUrl = null;
+      localPreview.style.display = 'none';
+      localPreview.src = '';
+      localPreviewEmpty.style.display = 'flex';
+      localPreviewEmpty.textContent = '尚未选择文件';
+      resetWebpPreview();
+      fileMeta.style.display = 'none';
+      setButtonsEnabled(false);
+      hideStatus();
+      responseBox.textContent = '等待上传...';
+      resultLinks.innerHTML = '';
+    });
+  </script>
+</body>
+</html>

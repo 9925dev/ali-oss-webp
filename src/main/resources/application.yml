@@ -1,0 +1,28 @@
+spring:
+  application:
+    name: infra-server
+  servlet:
+    multipart:
+      max-file-size: 200MB
+      max-request-size: 200MB
+
+server:
+  port: 8081
+
+# 阿里云 OSS 配置（请替换为真实凭证，或通过环境变量注入）
+aliyun:
+  oss:
+    endpoint: oss-cn-beijing.aliyuncs.com
+    accessKeyId: ${ALIYUN_OSS_ACCESS_KEY_ID:your-access-key-id}
+    accessKeySecret: ${ALIYUN_OSS_ACCESS_KEY_SECRET:your-access-key-secret}
+    bucketName: oss-prod
+    cyjBucketName: oss-bigdata-cyj-prod
+    directory: dir
+    apkBucketName: oss-prod-apk
+    apkEndpoint: prod.oss.com
+    domain: https://oss-prod.oss-cn-beijing.aliyuncs.com
+    original-image: original_image/ # 原始图片
+    thumbnail-image: thumbnail_image/ # 缩略图
+    webp-quality: 90 #质量分
+
+
